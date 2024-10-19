@@ -1,14 +1,19 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <time.h>
+#include <cstdio>
+#include <cstdlib>
+#include <ctime>
 
-#include <signal.h>
 #include <unistd.h>
 
 #include <initializer_list>
 #include <functional>
 #include <algorithm>
 #include <iostream>
+#include "oatpp/web/server/HttpConnectionHandler.hpp"
+
+#include "oatpp/network/Server.hpp"
+#include "oatpp/network/tcp/server/ConnectionProvider.hpp"
+
+using namespace std;
 
 #define PI 3.14159
 
@@ -47,13 +52,13 @@ struct event {
 //
 // }
 
-void updatePlayerPosition(entity* player, int newX, int newY){
+void updatePlayerPosition(entity* player, const int newX, const int newY){
 	player->x = newX;
-	player->y = newX;
+	player->y = newY;
 }
 
-void updatePlayerXP(entity* player, float xpMult) {
-	float oldXp = player->xp;
+void updatePlayerXP(entity* player, const float xpMult) {
+	const float oldXp = player->xp;
 	player->xp = oldXp * xpMult;
 }
 
@@ -61,7 +66,7 @@ int getRandom(int max){
 	return rand() % max + 0;  
 }
 
-void seed(entity entities[], int numEntities){
+void seed(entity entities[], const int numEntities){
 	for(int i = 0; i < numEntities; i++){
 		entities[i].x = getRandom(10);	
 		entities[i].y = getRandom(10);	
@@ -73,13 +78,13 @@ void seed(entity entities[], int numEntities){
 	}
 }
 
-void generateEvents(event events[], int numEvents, entity entities[], int numEntities){
+void generateEvents(event events[], int numEvents, entity entities[], const int numEntities){
 	for(int i = 0; i < numEvents; i++){
-		int randomTo = getRandom(numEntities);
-		int randomFrom = getRandom(numEntities);
+		const int randomTo = getRandom(numEntities);
+		const int randomFrom = getRandom(numEntities);
 
 		events[i].type = ATTACK;	
-		events[i].attackDmg = getRandom(50);	
+		events[i].attackDmg = static_cast<float>(getRandom(50));
 		events[i].to = &entities[randomTo];	
 		events[i].from = &entities[randomFrom];	
 	}
@@ -126,11 +131,9 @@ void updatePlayers(entity entities[], int numEntities, int gameTicks){
 }
 
 int main(){
-	srand(time(NULL));   // Initialization, should only be called once.
-	const int NUM_ENTITIES = 5;
-	const int NUM_EVENTS = 5;
+	srand(time(nullptr));   // Initialization, should only be called once.
+	constexpr int NUM_ENTITIES = 5;
 	entity entities[NUM_ENTITIES];
-	event events[NUM_EVENTS];
 
 	int world[10][10];
 
@@ -141,8 +144,11 @@ int main(){
 	}
 	seed(entities, NUM_ENTITIES);
 	int gameTicks = 0;
+	bool breakLoop = false;
 
-	while(1){	
+	while(!breakLoop){
+		constexpr int NUM_EVENTS = 5;
+		event events[NUM_EVENTS];
 		generateEvents(events, NUM_EVENTS, entities, NUM_ENTITIES);
 		updateWorld(entities, NUM_ENTITIES, events, NUM_EVENTS);
 		render(world, entities, NUM_ENTITIES);
